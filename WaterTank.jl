@@ -70,16 +70,16 @@ function waterTank()
 
     automaton = LightAutomaton(4)
     
-    #X = HPolyhedron([d_in > 0, d_out > 0, B * d_in <= V_max, B * d_out <= V_max], var) # invariants
+    X = HPolyhedron([d_in > 0, d_out > 0, B * d_in <= V_max, B * d_out <= V_max], var) # invariants
     stable_mode = @system(h' = stable!(h), dim:3, h ∈ X) # water tank mode stable
 
-    #X = HPolyhedron([d_in > 0, d_out > 0, B * d_in <= V_max, B * d_out <= V_max], var) # invariants
+    X = HPolyhedron([d_in > 0, d_out > 0, B * d_in <= V_max, B * d_out <= V_max], var) # invariants
     normal_mode = @system(h' = normal!(h), dim:3, h ∈ X) # water tank normal mode
 
-    #X = HPolyhedron([d_in > 0, d_out > 0, B * d_in <= V_max, B * d_out <= V_max], var) # invariants
+    X = HPolyhedron([d_in > 0, d_out > 0, B * d_in <= V_max, B * d_out <= V_max], var) # invariants
     filling_mode = @system(h' = filling!(h), dim:3, h ∈ X) # water tank filling mode
 
-    #X = HPolyhedron([d_in > 0, d_out > 0, B * d_in <= V_max, B * d_out <= V_max], var) # invariants
+    X = HPolyhedron([d_in > 0, d_out > 0, B * d_in <= V_max, B * d_out <= V_max], var) # invariants
     emptying_mode = @system(h' = emptying!(h), dim:3, h ∈ X) # water tank emptying mode
 
 

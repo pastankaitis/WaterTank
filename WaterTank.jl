@@ -71,20 +71,16 @@ function waterTank()
     automaton = LightAutomaton(4)
     
     #X = HPolyhedron([d_in > 0, d_out > 0, B * d_in <= V_max, B * d_out <= V_max], var) # invariants
-    #X = HPolyhedron([d_in > 0, d_out > 0], var) # invariants
-    stable_mode = @system(h' = stable!(h), dim:3) # water tank mode stable
+    stable_mode = @system(h' = stable!(h), dim:3, h ∈ X) # water tank mode stable
 
     #X = HPolyhedron([d_in > 0, d_out > 0, B * d_in <= V_max, B * d_out <= V_max], var) # invariants
-    #X = HPolyhedron([d_in > 0, d_out > 0], var) # invariants
-    normal_mode = @system(h' = normal!(h), dim:3) # water tank normal mode
+    normal_mode = @system(h' = normal!(h), dim:3, h ∈ X) # water tank normal mode
 
     #X = HPolyhedron([d_in > 0, d_out > 0, B * d_in <= V_max, B * d_out <= V_max], var) # invariants
-    #X = HPolyhedron([d_in > 0, d_out > 0], var) # invariants
-    filling_mode = @system(h' = filling!(h), dim:3) # water tank filling mode
+    filling_mode = @system(h' = filling!(h), dim:3, h ∈ X) # water tank filling mode
 
     #X = HPolyhedron([d_in > 0, d_out > 0, B * d_in <= V_max, B * d_out <= V_max], var) # invariants
-    #X = HPolyhedron([d_in > 0, d_out > 0], var) # invariants
-    emptying_mode = @system(h' = emptying!(h), dim:3) # water tank emptying mode
+    emptying_mode = @system(h' = emptying!(h), dim:3, h ∈ X) # water tank emptying mode
 
 
     # transition "stable" -> "normal"
@@ -119,16 +115,18 @@ function waterTank()
 end
 
 prob = waterTank()
+
 boxdirs = BoxDirections(3)
 
-sol12 = solve(prob, tspan=(0.0, 200.0),
-    alg=TMJets20(abstol=1e-5, maxsteps=10000, orderT=3, orderQ=1, disjointness=BoxEnclosure()),
-    intersect_source_invariant=false,
-    intersection_method=TemplateHullIntersection(boxdirs),
-    clustering_method=LazyClustering(1),
-    disjointness_method=BoxEnclosure())
 
-
+sol = solve(prob,
+                tspan=(0.0, 200.0),
+                alg=TMJets20(abstol=1e-5, maxsteps=10000, orderT=3, orderQ=1, disjointness=BoxEnclosure()),
+                max_jumps=1,
+                intersect_source_invariant=false,
+                intersection_method=TemplateHullIntersection(boxdirs),
+                clustering_method=LazyClustering(1),
+                disjointness_method=BoxEnclosure())
 
 
 

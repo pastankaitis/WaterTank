@@ -122,7 +122,6 @@ boxdirs = BoxDirections(3)
 sol = solve(prob,
                 tspan=(0.0, 200.0),
                 alg=TMJets20(abstol=1e-5, maxsteps=10000, orderT=3, orderQ=1, disjointness=BoxEnclosure()),
-                max_jumps=1,
                 intersect_source_invariant=false,
                 intersection_method=TemplateHullIntersection(boxdirs),
                 clustering_method=LazyClustering(1),

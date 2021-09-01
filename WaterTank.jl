@@ -1,4 +1,4 @@
-using ReachabilityAnalysis, Plots, Symbolics
+using ReachabilityAnalysis, Plots, Symbolics, MathematicalSystems, SparseArrays
 
 
 #constants
@@ -13,10 +13,12 @@ const V_saf_min = 0.5 # minimum allowed water level
 
 @taylorize function stable!(du, u, p, t)
 
+    d_in, d_out, h = u
+
     #differential equations for the stable water tank mode
-    du[1] = 0
-    du[2] = 0
-    du[1] = 0
+    du[1] = zero(u[1])
+    du[2] = zero(u[1])
+    du[3] = zero(u[1])
 
     return du
 
@@ -29,9 +31,10 @@ end
     d_in, d_out, h = u
     
     #differential equations for the filling water tank mode
-    du[1] = 1
-    du[2] = 0
+    du[1] = one(u[1])
+    du[2] = zero(u[1])
     du[3] = d_in
+
 
     return du
 
@@ -42,8 +45,8 @@ end
     d_in, d_out, h = u
 
     #differential equations for the emptying water tank mode
-    du[1] = 0
-    du[2] = 1
+    du[1] = zero(u[1])
+    du[2] = one(u[1])
     du[3] = -d_out
 
     return du
@@ -56,9 +59,10 @@ end
     d_in, d_out, h = u
 
     #differential equations for the normal water tank mode
-    du[1] = 1
-    du[2] = 1
+    du[1] = one(u[1])
+    du[2] = one(u[1])
     du[3] = d_in - d_out
+
 
     return du
 
@@ -68,10 +72,10 @@ function waterTank()
 
     var = @variables d_in, d_out, h
 
-    automaton = LightAutomaton(4)
+    automaton = LightAutomaton(3)
     
-    X = HPolyhedron([d_in > 0, d_out > 0, B * d_in <= V_max, B * d_out <= V_max], var) # invariants
-    stable_mode = @system(h' = stable!(h), dim:3, h ∈ X) # water tank mode stable
+    #X = HPolyhedron([d_in > 0, d_out > 0, B * d_in <= V_max, B * d_out <= V_max], var) # invariants
+    #stable_mode = @system(h' = stable!(h), dim:3, h ∈ X) # water tank mode stable
 
     X = HPolyhedron([d_in > 0, d_out > 0, B * d_in <= V_max, B * d_out <= V_max], var) # invariants
     normal_mode = @system(h' = normal!(h), dim:3, h ∈ X) # water tank normal mode
@@ -84,25 +88,35 @@ function waterTank()
 
 
     # transition "stable" -> "normal"
-    add_transition!(automaton, 1, 2, 1)
+    #add_transition!(automaton, 1, 2, 1)
     #guard_1 = HalfSpace(h >= 0, var)
-    t1 = @map(h -> h, dim: 3)
+    #t1 = @ConstrainedIdentityMap(h -> h, dim: 3)
 
    
     # transition "normal" -> "filling"
-    add_transition!(automaton, 2, 3, 2)
+    add_transition!(automaton, 1, 2, 1)
     guard_2 = HalfSpace(h <= V_saf_min, var)
-    t2 = @map(h -> h, dim: 3, h ∈ guard_2)
+    t1 = ConstrainedIdentityMap(3, guard_2) 
 
     # transition "normal" -> "emptying"
-    add_transition!(automaton, 2, 3, 2)
+    add_transition!(automaton, 1, 3, 2)
     guard_3 = HalfSpace(h >= V_saf_max, var)
-    t3 = @map(h -> h, dim: 3, h ∈ guard_3)
+    t2 = ConstrainedIdentityMap(3, guard_3)
+
+    # transition "filling" -> "normal"
+    add_transition!(automaton, 2, 1, 3)
+    guard_4 = HPolyhedron([h >= V_saf_min, h <= V_saf_max], var)
+    t3 = ConstrainedIdentityMap(3, guard_4) 
+
+    # transition "emptying" -> "normal"
+    add_transition!(automaton, 3, 1, 4)
+    guard_5 = HPolyhedron([h >= V_saf_min, h <= V_saf_max], var)
+    t4 = ConstrainedIdentityMap(3, guard_5) 
 
 
     H = HybridSystem(automaton=automaton,
-                     modes=[stable_mode, normal_mode, filling_mode, emptying_mode],
-                     resetmaps=[t1, t2, t3])
+                     modes=[normal_mode, filling_mode, emptying_mode],
+                     resetmaps=[t1, t2, t3, t4])
 
 
     ## initial condition in mode 1
@@ -126,6 +140,9 @@ sol = solve(prob,
                 intersection_method=TemplateHullIntersection(boxdirs),
                 clustering_method=LazyClustering(1),
                 disjointness_method=BoxEnclosure())
+
+
+plot(sol, vars=(0, 3), xlab="t", ylab="h", lc=:blue)
 
 
 
